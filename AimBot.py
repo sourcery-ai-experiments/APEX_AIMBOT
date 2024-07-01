@@ -20,6 +20,7 @@ class AimBot:
         config = yaml.load(open(config_path, 'r', encoding='UTF-8'), Loader=yaml.FullLoader)
         self.args = argparse.Namespace(**config)
 
+        self.detect_length = self.args.detect_length  # Ensure detect_length is obtained from the config
         self.initialize_params()    
         self.build_trt_model(onnx_path, engine_path)
         
@@ -43,12 +44,11 @@ class AimBot:
     
     def initialize_params(self):
         self.auto_lock = True
-        self.locking=False
+        self.locking = False
 
         # default settings by game
-        self.detect_length = 640
-        self.smooth = self.args.smooth * 1920 / self.args.resolution_x # higher resolution requires less move
-        self.scale = self.args.resolution_x / 1920 # set hyperparameters on 1920*1080, making all resolution the same effect
+        self.smooth = self.args.smooth * 1920 / self.args.resolution_x  # higher resolution requires less move
+        self.scale = self.args.resolution_x / 1920  # set hyperparameters on 1920*1080, making all resolution the same effect
         for key in self.args.__dict__:
             if 'dis' in key:
                 self.args.__dict__[key] *= self.scale
@@ -56,8 +56,8 @@ class AimBot:
         # mouse settings
         self.pidx = PID(self.args.pidx_kp, self.args.pidx_kd, self.args.pidx_ki, setpoint=0, sample_time=0.001,)
         self.pidy = PID(self.args.pidy_kp, self.args.pidy_kd, self.args.pidy_ki, setpoint=0, sample_time=0.001,)
-        self.pidx(0),self.pidy(0)
-        self.detect_center_x, self.detect_center_y = self.detect_length//2, self.detect_length//2
+        self.pidx(0), self.pidy(0)
+        self.detect_center_x, self.detect_center_y = self.detect_length // 2, self.detect_length // 2
 
     def build_trt_model(self, onnx_path, engine_path):
         if not os.path.exists(engine_path):
@@ -66,7 +66,8 @@ class AimBot:
 
     def initialize_camera(self):
         self.screen_width, self.screen_height = pyautogui.size()
-        self.top, self.left=self.screen_height//2-self.detect_length//2,self.screen_width//2-self.detect_length//2
+        self.top = self.screen_height // 2 - self.detect_length // 2
+        self.left = self.screen_width // 2 - self.detect_length // 2
         self.camera = mss()
         self.region = {"top": self.top, "left": self.left, "width": self.detect_length, "height": self.detect_length}
 
@@ -195,7 +196,7 @@ class AimBot:
         nums, boxes, confidences, classes = self.engine.inference(img)
         target_sort_list = self.sort_target(boxes, confidences, classes)
         self.lock_target(target_sort_list)
-        fps_track = 1/(time.time()-start_time)
+        fps_track = 1 / (time.time() - start_time)
 
         if self.args.save_screenshot:
             self.q_save.put([img, self.locking, nums])
